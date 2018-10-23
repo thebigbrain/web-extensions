@@ -8,5 +8,8 @@
   },
   "devDependencies": {
     "web-ext": "^2.9.1"
+  },
+  "dependencies": {
+    "elasticsearch-browser": "^15.1.1"
   }
 }
