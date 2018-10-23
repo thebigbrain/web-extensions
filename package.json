@@ -1,0 +1,12 @@
+{
+  "name": "web-extensions",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "web-ext run"
+  },
+  "devDependencies": {
+    "web-ext": "^2.9.1"
+  }
+}
