@@ -9,6 +9,7 @@
   ],
   "background": {
     "scripts": [
+      "js/md5.js",
       "js/es.js",
       "js/net-monitor.js"
     ]

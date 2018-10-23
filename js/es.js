@@ -5,8 +5,14 @@ let esRequestQueue = [];
 let esRequestCache = new Map();
 
 function getDtFromHost(h) {
-  let dt = h.replace(/^http[s]?:\/\//, '').replace('/', '').split('.');
+  let dt = h.replace(/^http[s]?:\/\//, '').split('/')[0].split('?')[0].split('.');
   return dt.reverse().join('.');
+}
+
+function getHash(msg) {
+  let hash = md5.create();
+  hash.update(msg);
+  return hash.hex();
 }
 
 function esPing() {
@@ -24,6 +30,9 @@ function esPut(url, data) {
   url = ES_HOST + url;
   return fetch(url, {
     method: 'PUT',
+    headers: {
+      "Content-Type": "application/json; charset=utf-8"
+    },
     body: JSON.stringify(data)
   });
 }
@@ -32,6 +41,9 @@ function esPost(url, data) {
   url = ES_HOST + url;
   return fetch(url, {
     method: 'POST',
+    headers: {
+      "Content-Type": "application/json; charset=utf-8"
+    },
     body: JSON.stringify(data)
   });
 }
@@ -47,11 +59,15 @@ esPing().then(ok => {
     let doHandle = (resolve, reject) => {
       let url = esRequestQueue.shift();
       let details = esRequestCache.get(url);
-      fetch(url).then(resp => {
-        let dt = getDtFromHost(details.initiator)
-        esPost(`/website/${dt}/`, {
-          url,
-          content: resp.text()
+      fetch(url).then(async resp => {
+        let dt = getDtFromHost(details.initiator || url);
+        let id = getHash(url);
+        let contentType = resp.headers.get('content-type');
+        let content = await resp.text();
+        esPut(`/${dt}/page/${id}`, {
+            url,
+            contentType,
+            content
         }).catch(reject).then(resolve);
       });
     };
@@ -73,8 +89,8 @@ esPing().then(ok => {
           loop();
         }
       }, timeout);
-    }
+    };
 
     loop(0);
   }
-})
+});
