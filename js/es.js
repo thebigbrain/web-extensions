@@ -4,6 +4,10 @@ let unHandledCounter = 0;
 let esRequestQueue = [];
 let esRequestCache = new Map();
 
+function logError(err) {
+  console.error(err);
+}
+
 function getDtFromHost(h) {
   let dt = h.replace(/^http[s]?:\/\//, '').split('/')[0].split('?')[0].split('.');
   return dt.reverse().join('.');
@@ -60,35 +64,45 @@ function esSearch(url) {
 // init here
 esPing().then(resp => {
   if (resp.status == 200) {
-    let doHandle = (resolve, reject) => {
+    async function doHandle() {
       let url = esRequestQueue.shift();
       let details = esRequestCache.get(url);
-      fetch(url).then(async resp => {
-        let dt = getDtFromHost(details.initiator || url);
+      try {
+        let resp = await fetch(url);
+        let dt = getDtFromHost(details.initiator);
         let id = getHash(url);
         let contentType = resp.headers.get('content-type');
         let content = await resp.text();
-        esPut(`/${dt}/page/${id}`, {
+        let contentHash
+        try {
+          await esPut(`/${dt}/page/${id}`, {
             url,
             contentType,
             content
-        }).catch(reject).then(resolve);
-      });
-    };
+          });
+        }catch (err) {
+          logError(err);
+        }
+      } catch (err) {
+        logError(err);
+      }
+    }
 
-    let handler = () => {
-      return new Promise((resolve, reject) => {
-        unHandledCounter--;
-        doHandle(resolve, reject);
-      });
+    let handler = async () => {
+      try {
+        let res = await doHandle();
+        return res;
+      } catch (err) {
+        logError(err);
+      }
     };
 
     let loop = (timeout = 500) => {
-      window.setTimeout(() => {
+      window.setTimeout(async () => {
         if (unHandledCounter > 0) {
-          handler().then(() => {
-            loop(50);
-          });
+          unHandledCounter--;
+          await handler();
+          loop(50);
         } else {
           loop();
         }

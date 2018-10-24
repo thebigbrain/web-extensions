@@ -1,5 +1,5 @@
 const regexp_allowed_hosts = [
-  /\.mozilla\.org/,
+  // /\.mozilla\.org/,
   /\.eastmoney\.com/
 ];
 
@@ -12,21 +12,20 @@ function isUrlAllowed(url = '') {
   return false;
 }
 
-function beforeRequestListener(details) {
+function logResponse(details) {
   let url = details.url;
   if (details.method == 'GET') {
     if (esRequestCache.get(url) || !/^http/.test(url) || !isUrlAllowed(url)) {
         return;
     }
-    console.log(url, details);
     esRequestCache.set(url, details);
     esRequestQueue.push(url);
     unHandledCounter++;
   }
 }
 
-chrome.webRequest.onBeforeRequest.addListener(
-  beforeRequestListener,
+chrome.webRequest.onCompleted.addListener(
+  logResponse,
   {
     urls: [
         "<all_urls>"
@@ -39,6 +38,6 @@ chrome.webRequest.onBeforeRequest.addListener(
         "other"
     ]
   }, [
-    'requestBody'
+    'responseHeaders'
   ]
 );
