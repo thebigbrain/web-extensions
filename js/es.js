@@ -15,20 +15,24 @@ function getHash(msg) {
   return hash.hex();
 }
 
-function esPing() {
-  return fetch(ES_HOST, {
-    method: 'HEAD'
-  }).then(resp => {
-    console.log(`esping ${resp.statusText}`);
-    return resp.status == 200;
-  }).catch(err => {
-    console.error(err);
-  });
+async function esPing() {
+  try {
+    let resp = await fetch(ES_HOST, {
+        method: 'HEAD'
+    });
+    return resp;
+  } catch(err) {
+    ES_HOST = 'http://192.168.42.130:9200';
+    let resp = await fetch(ES_HOST, {
+        method: 'HEAD'
+    });
+    return resp;
+  }
 }
 
 function esPut(url, data) {
-  url = ES_HOST + url;
-  return fetch(url, {
+  request = new Request(ES_HOST + url);
+  return fetch(request, {
     method: 'PUT',
     headers: {
       "Content-Type": "application/json; charset=utf-8"
@@ -38,8 +42,8 @@ function esPut(url, data) {
 }
 
 function esPost(url, data) {
-  url = ES_HOST + url;
-  return fetch(url, {
+  request = new Request(ES_HOST + url);
+  return fetch(request, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json; charset=utf-8"
@@ -49,13 +53,13 @@ function esPost(url, data) {
 }
 
 function esSearch(url) {
-  url = ES_HOST + url;
-  return fetch(url).then(resp => resp.json());
+  request = new Request(ES_HOST + url);
+  return fetch(request).then(resp => resp.json());
 }
 
 // init here
-esPing().then(ok => {
-  if (ok) {
+esPing().then(resp => {
+  if (resp.status == 200) {
     let doHandle = (resolve, reject) => {
       let url = esRequestQueue.shift();
       let details = esRequestCache.get(url);
