@@ -19,18 +19,25 @@ function getHash(msg) {
   return hash.hex();
 }
 
+async function getStorage(key = null) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(key, (items) => {
+      resolve(items);
+    });
+  });
+}
+
 async function esPing() {
+  let items = await getStorage();
+  ES_HOST = items.es_host || ES_HOST;
   try {
     let resp = await fetch(ES_HOST, {
         method: 'HEAD'
     });
     return resp;
   } catch(err) {
-    ES_HOST = 'http://192.168.42.130:9200';
-    let resp = await fetch(ES_HOST, {
-        method: 'HEAD'
-    });
-    return resp;
+    console.error(err);
+    return { status: 'error' };
   }
 }
 
@@ -63,7 +70,7 @@ function esSearch(url) {
 
 // init here
 esPing().then(resp => {
-  if (resp.status == 200) {
+  if (resp.status === 200) {
     async function doHandle() {
       let url = esRequestQueue.shift();
       let details = esRequestCache.get(url);
@@ -73,7 +80,7 @@ esPing().then(resp => {
         let id = getHash(url);
         let contentType = resp.headers.get('content-type');
         let content = await resp.text();
-        let contentHash
+        let contentHash;
         try {
           await esPut(`/${dt}/page/${id}`, {
             url,
@@ -90,8 +97,7 @@ esPing().then(resp => {
 
     let handler = async () => {
       try {
-        let res = await doHandle();
-        return res;
+        return await doHandle();
       } catch (err) {
         logError(err);
       }

@@ -1,10 +1,10 @@
 const regexp_allowed_hosts = [
-  // /\.mozilla\.org/,
+  /\.mozilla\.org/,
   /\.eastmoney\.com/
 ];
 
 function isUrlAllowed(url = '') {
-  for (let reg in regexp_allowed_hosts) {
+  for (let reg of regexp_allowed_hosts) {
     if (url.search(reg) !== -1) {
       return true;
     }
@@ -15,7 +15,7 @@ function isUrlAllowed(url = '') {
 function logResponse(details) {
   let url = details.url;
   if (details.method == 'GET') {
-    if (esRequestCache.get(url) || !/^http/.test(url) || !isUrlAllowed(url)) {
+    if (esRequestCache.get(url) || !/^http/.test(url) || !isUrlAllowed(details.initiator)) {
         return;
     }
     esRequestCache.set(url, details);
@@ -41,3 +41,17 @@ chrome.webRequest.onCompleted.addListener(
     'responseHeaders'
   ]
 );
+
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  console.log(message, sender, sendResponse);
+  switch(message){
+    case 'reload':
+      chrome.runtime.reload();
+    default:
+      break;
+  }
+});
+
+chrome.browserAction.onClicked.addListener(function (event) {
+  chrome.runtime.reload();
+});
